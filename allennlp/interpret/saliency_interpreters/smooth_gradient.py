@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Any
+from typing import Dict, Any, Iterable
 
 import numpy
 import torch
@@ -25,10 +25,7 @@ class SmoothGradient(SaliencyInterpreter):
         self.stdev = 0.01
         self.num_samples = 10
 
-    def saliency_interpret_from_json(self, inputs: JsonDict) -> JsonDict:
-        # Convert inputs to labeled instances
-        labeled_instances = self.predictor.json_to_labeled_instances(inputs)
-
+    def saliency_interpret_instances(self, labeled_instances: Iterable[Instance]) -> JsonDict:
         instances_with_grads = dict()
         for idx, instance in enumerate(labeled_instances):
             # Run smoothgrad

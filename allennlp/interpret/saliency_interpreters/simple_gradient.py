@@ -1,11 +1,12 @@
 import math
 
-from typing import List
+from typing import List, Iterable 
 import numpy
 
 from allennlp.common.util import JsonDict, sanitize
 from allennlp.interpret.saliency_interpreters.saliency_interpreter import SaliencyInterpreter
 from allennlp.nn import util
+from allennlp.data import Instance
 
 
 @SaliencyInterpreter.register("simple-gradient")
@@ -14,12 +15,11 @@ class SimpleGradient(SaliencyInterpreter):
     Registered as a `SaliencyInterpreter` with name "simple-gradient".
     """
 
-    def saliency_interpret_from_json(self, inputs: JsonDict) -> JsonDict:
+    def saliency_interpret_instances(self, labeled_instances: Iterable[Instance]) -> JsonDict:
         """
         Interprets the model's prediction for inputs.  Gets the gradients of the loss with respect
         to the input and returns those gradients normalized and sanitized.
         """
-        labeled_instances = self.predictor.json_to_labeled_instances(inputs)
 
         # List of embedding inputs, used for multiplying gradient by the input for normalization
         embeddings_list: List[numpy.ndarray] = []

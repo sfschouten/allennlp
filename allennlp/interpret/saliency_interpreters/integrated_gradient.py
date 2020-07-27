@@ -1,5 +1,5 @@
 import math
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Iterable 
 
 import numpy
 
@@ -17,9 +17,7 @@ class IntegratedGradient(SaliencyInterpreter):
     Registered as a `SaliencyInterpreter` with name "integrated-gradient".
     """
 
-    def saliency_interpret_from_json(self, inputs: JsonDict) -> JsonDict:
-        # Convert inputs to labeled instances
-        labeled_instances = self.predictor.json_to_labeled_instances(inputs)
+    def saliency_interpret_instances(self, labeled_instances: Iterable[Instance]) -> JsonDict:
 
         instances_with_grads = dict()
         for idx, instance in enumerate(labeled_instances):
