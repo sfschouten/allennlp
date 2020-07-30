@@ -44,8 +44,16 @@ class SaliencyInterpreter(Registrable):
         interpretations = {}
         batches = (itertools.islice(data, x, x+batch_size) for x in range(0, len(data), batch_size))
         for idx, batch in Tqdm.tqdm(enumerate(batches), desc="interpreting batches"):
-            # TODO predict labels for batch instances
-            batch_interpr = self.saliency_interpret_instances(batch)
+           
+            batch = list(batch)
+            batch_outputs = self.predictor._model.forward_on_instances(batch)
+            
+            labeled_instances = []
+            for instance, outputs in zip(batch, batch_outputs):
+                labeled_instance = self.predictor.predictions_to_labeled_instances(instance, outputs)
+                labeled_instances.extend(labeled_instance)
+
+            batch_interpr = self.saliency_interpret_instances(labeled_instances)
             for key, value in batch_interpr.items():
                 key_name, key_idx = key.split('_')
                 interpretations[f'{key_name}_{batch_size*idx + int(key_idx)}'] = value
@@ -54,12 +62,12 @@ class SaliencyInterpreter(Registrable):
 
     def saliency_interpret_instances(self, labeled_instances: Iterable[Instance]) -> JsonDict:
         """
-        This function finds saliency values for each token in the given instance.
+        This function finds saliency values for each token in the given instances.
 
         # Parameters
 
-        inputs : `Instance`
-            The labeled instance you want to interpret.
+        labeled_instances: `Iterable[Instance]`
+            The labeled instances you want to interpret.
 
         # Returns
 
