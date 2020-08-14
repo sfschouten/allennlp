@@ -40,20 +40,46 @@ class SaliencyInterpreter(Registrable):
         
         return self.saliency_interpret_instances(labeled_instances)
 
-    def saliency_interpret_dataset(self, data: Union[AllennlpDataset, AllennlpLazyDataset], batch_size) -> JsonDict:
+    def saliency_interpret_dataset(self, data: Union[AllennlpDataset, AllennlpLazyDataset], batch_size, use_prediction_labels: bool = True) -> JsonDict:
+        """
+        Function to interpret all instances in a dataset.
+
+        # Parameters
+
+        data: `Union[AllennlpDataset, AllennlpLazyDataset]`
+            The dataset to interpret.
+
+        batch_size: `int`
+            How many instances to interpret at a time.
+        
+        use_prediction_labels: `bool`
+            Wether or not to fill the label field of the instances with model predictions.
+
+        # Returns
+
+        interpretation : `JsonDict`
+            Contains the normalized saliency values for each input token. The dict has entries for
+            each instance in the inputs JsonDict, e.g., `{instance_1: ..., instance_2:, ... }`.
+            Each one of those entries has entries for the saliency of the inputs, e.g.,
+            `{grad_input_1: ..., grad_input_2: ... }`.
+
+        """
         interpretations = {}
         batches = (itertools.islice(data, x, x+batch_size) for x in range(0, len(data), batch_size))
         for idx, batch in Tqdm.tqdm(enumerate(batches), desc="interpreting batches"):
-           
             batch = list(batch)
-            batch_outputs = self.predictor._model.forward_on_instances(batch)
-            
-            labeled_instances = []
-            for instance, outputs in zip(batch, batch_outputs):
-                labeled_instance = self.predictor.predictions_to_labeled_instances(instance, outputs)
-                labeled_instances.extend(labeled_instance)
 
-            batch_interpr = self.saliency_interpret_instances(labeled_instances)
+            if use_prediction_labels:
+                batch_outputs = self.predictor._model.forward_on_instances(batch)
+            
+                labeled_instances = []
+                for instance, outputs in zip(batch, batch_outputs):
+                    labeled_instance = self.predictor.predictions_to_labeled_instances(instance, outputs)
+                    labeled_instances.extend(labeled_instance)
+
+                batch = labeled_instances
+
+            batch_interpr = self.saliency_interpret_instances(batch)
             for key, value in batch_interpr.items():
                 key_name, key_idx = key.split('_')
                 interpretations[f'{key_name}_{batch_size*idx + int(key_idx)}'] = value
